@@ -154,10 +154,10 @@ var json1 = {
 </template>
 
 <hr />
-<div ng-app="myApp">
-  <organizational-chart datasource="json"></organizational-chart>
+<div ng-app="myApp" ng-controller="myCtrl">
+  <organizational-chart datasource="datasource"></organizational-chart>
   <br />
-  <organizational-chart datasource="json1"></organizational-chart>
+  <organizational-chart datasource="datasource1"></organizational-chart>
 </div>
 <hr />
 
@@ -259,7 +259,7 @@ var json1 = {
           thisnode.width = result;
           return result;
         };
-        let data = window[this["datasource"]];
+        let data = this.datasource;
         let nodes = [{
           "depth": 0,
           "leafCount": 0
@@ -473,7 +473,7 @@ var json1 = {
       hspace:       "@",
       vspace:       "@",
       border:       "@",
-      datasource:   "@",
+      datasource:   "<",
       borderStyle:  "@"
     };
     let result = {
@@ -490,7 +490,12 @@ var json1 = {
 
 
 <script>
-  angular.module('myApp', []).component('organizationalChart', buildOrganizationalChart())
+  var app = angular.module('myApp', []);
+  app.component('organizationalChart', buildOrganizationalChart())
+  app.controller("myCtrl", function($scope) {
+    $scope.datasource = json;
+    $scope.datasource1 = json1;
+  });
 </script>
 
 
