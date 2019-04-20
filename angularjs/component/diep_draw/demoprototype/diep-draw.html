@@ -1,0 +1,395 @@
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js"></script>
+
+
+
+
+<div id="entry_article" ng-app="blogEntryApp" ng-controller="blogEntryCtrl">
+
+  <hr />
+  <diep-draw-board width="600" height="600">
+      <diep-draw-node width="300" height="300" left="300" top="300">
+        <div>Left top</div>
+      </diep-draw-node>
+      <diep-draw-node width="300" height="300" left="0" top="0">
+        <div>Right bottom</div>
+      </diep-draw-node>
+  </diep-draw-board>
+</div>
+
+
+
+<script>
+  //////////////////////////////////////////////////////////////////////////////
+  // Helper functions
+  //////////////////////////////////////////////////////////////////////////////
+  function applyDefaultParameters(self, defaultParams) {
+    for (let key in defaultParams) {
+      if (typeof self[key] != "string") {
+        self[key] = defaultParams[key];
+      }
+    }
+  }
+
+  function convertParametersToInt(self, keys) {
+    let n = keys.length;
+    for (let i = 0; i < n; i++) {
+      self[keys[i]] = parseInt(self[keys[i]]);
+    }
+  }
+
+  function getBoolean(b, bDefault = false) {
+    let defaultValue = (typeof bDefault === "boolean") ? bDefault : false;
+    return (typeof b === "boolean") ? b : defaultValue;
+  }
+
+  function getStringMap(map) {
+    if (map == null || !(typeof map === "object")) {
+      return null;
+    }
+    let result = {};
+    let isMap = false;
+    for(let key in map) {
+      if (typeof map[key] === "string") {
+        isMap = true;
+        result[key] = map[key];
+      }
+    }
+    return isMap ? result : null;
+  }
+
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Data mode
+  //////////////////////////////////////////////////////////////////////////////
+  class GraphicRenderRequest {
+    constructor(...args) {
+      this.$$GraphicRenderRequestPrivateAttrs = Symbol();
+      this[this.$$GraphicRenderRequestPrivateAttrs] = {};
+      let $$this = this[this.$$GraphicRenderRequestPrivateAttrs];
+      $$this.operation = args[0];
+      args.shift();
+      $$this.parameters = args;
+    }
+
+    getOperation() {
+      let $$this = this[this.$$GraphicRenderRequestPrivateAttrs];
+      return $$this.operation;
+    }
+
+    getParameters() {
+      let $$this = this[this.$$GraphicRenderRequestPrivateAttrs];
+      return $$this.parameters;
+    }
+  };
+
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  // GUI component
+  //////////////////////////////////////////////////////////////////////////////
+  class DiepDraw {
+    ////////////////////////////////////////////////////////////////////////////
+    // Angular attributes
+    ////////////////////////////////////////////////////////////////////////////
+    // State of component, its domain values are:
+    //   0: initialized state
+    //   1: joined state (it is registered with an Angular application)
+
+    static get TAG_PREFIX() {
+      return "diepDraw";
+    }
+
+    static get TAG_FULL_NAME() {
+      throw new TypeError(
+        "Can not invoke abstract property TAG_NAME of abstract class DiepDraw"
+      );
+    }
+
+    static get DEFAULT_PARAMS() {
+      return {
+        "width":  "32",
+        "height":  "32",
+      };
+    };
+
+
+    constructor(
+      isTranscluded = false,
+      requiredComponents = null
+    ) {
+      // Private attributes
+      this.$$DiepDrawPrivateAttrs = Symbol();
+      this[this.$$DiepDrawPrivateAttrs] = {};
+      let $$this = this[this.$$DiepDrawPrivateAttrs];
+      $$this.state = 0;
+
+      if (new.target === DiepDraw) {
+        throw new TypeError(
+          "Can not initialize an instance of abstract class GUIObject"
+        );
+      }
+      $$this.isTranscluded = getBoolean(isTranscluded);
+      $$this.requiredComponents = getStringMap(requiredComponents);
+    }
+
+    join(app) {
+      let $$this = this[this.$$DiepDrawPrivateAttrs];
+      if ($$this.state) {
+        return false;
+      }
+      app.component(this.constructor.TAG_FULL_NAME, this.getComponentConfig());
+      $$this.state = 1;
+      return true;
+    }
+
+    getComponentConfig() {
+      let $$this = this[this.$$DiepDrawPrivateAttrs];
+      let config = {
+        template:   this.getTemplateString(),
+        controller: this.getControllerConfigFunc(),
+        bindings:   this.getBindingConfig()
+      };
+      if ($$this.isTranscluded) {
+        config.transclude = true;
+      }
+      if ($$this.requiredComponents != null) {
+        config.require = $$this.requiredComponents;
+      }
+      return config;
+    }
+
+    // To be overriden
+    getTemplateString() {
+      throw new TypeError(
+        "Can not invoke abstract method getTemplateString"
+      );
+    }
+
+    // Could be overriden
+    getControllerConfigFunc() {
+      let controllerConfigFunc = function ($scope, $element) {
+      }
+      return controllerConfigFunc;
+    }
+
+    getDefaultParametersBindingConfig() {
+      let result = {};
+      let proto = this.constructor;
+      while (typeof proto["DEFAULT_PARAMS"] === "object") {
+        result = Object.assign(result, proto["DEFAULT_PARAMS"]);
+        proto = Object.getPrototypeOf(proto);
+      }
+      return result;
+    }
+
+    // To be overriden
+    getBindingConfig() {
+      let result = this.getDefaultParametersBindingConfig();
+      for (let key in result) {
+        result[key] = '@';
+      }
+      let newConfig = {};
+      result = Object.assign(newConfig, result);
+      return result;
+    }
+  }
+
+
+  class Node  extends DiepDraw {
+    static get TAG_FULL_NAME() {
+      return DiepDraw.TAG_PREFIX + "Node";
+    }
+
+    static get DEFAULT_PARAMS() {
+      let result = DiepDraw.DEFAULT_PARAMS;
+      result["left"] = "0";
+      result["top"] = "0";
+      return result;
+    };
+
+    constructor(isTranscluded = true) { 
+      super(
+        isTranscluded,
+        {
+          boardCtrl: '^' + Board.TAG_FULL_NAME
+        }
+      );
+      // Private attributes
+      this.$$NodePrivateAttrs = Symbol();
+      this[this.$$NodePrivateAttrs] = {};
+      let $$this = this[this.$$NodePrivateAttrs];
+      $$this.left =
+        (typeof left === "number") ? left : 0;       
+      $$this.top =
+       (typeof top === "number") ? top : 0;
+    }
+
+    getTemplateString() {
+      return "<div ng-transclude ng-style=\"$ctrl.style\"></div>";
+    }
+
+    getControllerConfigFunc() {
+      let thisNode = this;
+      let controllerConfigFunc = function ($scope, $element) {
+        this.$onInit = function() {
+          this.boardCtrl.insert(this);
+        };
+        this.$postLink = function() {
+          let keys = [];
+          for (var key in thisNode.constructor.DEFAULT_PARAMS) {
+            keys.push(key);
+          }
+          // Default params setting applying
+          applyDefaultParameters(this, thisNode.constructor.DEFAULT_PARAMS);
+          // Convert params to integer
+          convertParametersToInt(this, keys);
+
+          // Compute style for template
+          this.style = {
+            "position":     "absolute",
+            "left":         this.left + "px",
+            "top":          this.top + "px",
+            "width":        this.width + "px",
+            "height":       this.height + "px",
+            "border-width": "0px",
+            "border-style": "none",
+            "margin":       "0px 0px 0px 0px"
+          };
+        };
+      }
+      return controllerConfigFunc;
+    }
+
+    // This is a fake data
+    render() {
+      let result = [];
+      result.push(new GraphicRenderRequest(
+        "fillStyle", "#FF0000"
+      ));
+      result.push(new GraphicRenderRequest(
+        "fillRect", 1, 1, 30, 60
+      ));
+    }
+  };
+
+
+  class Board extends DiepDraw {
+    static get TAG_FULL_NAME() {
+      return DiepDraw.TAG_PREFIX + "Board";
+    }
+
+    static get DEFAULT_PARAMS() {
+      let result = DiepDraw.DEFAULT_PARAMS;
+      return result;
+    };
+
+    constructor(isScrollable = false, isSpanable = false) {
+      super(true);
+      // Private attributes
+      this.$$BoardPrivateAttrs = Symbol();
+      this[this.$$BoardPrivateAttrs] = {};
+      let $$this = this[this.$$BoardPrivateAttrs];
+      $$this.isSpanable =
+        (typeof isSpanable === "boolean") ? isSpanable : false;
+      $$this.isScrollable =
+        (typeof isScrollable === "boolean") ? isScrollable : false;
+    }
+
+    getTemplateString() {
+      // There is no template, this node just 'transclude'
+      return "";
+    }
+
+    getControllerConfigFunc() {
+      let thisBoard = this;
+      let controllerConfigFunc = function ($scope, $element, $transclude) {
+        this.sime = "^H^";
+        this.nodes = [];
+        this.insert = function (node) {
+          this.nodes.push(node);
+        }
+
+        this.$postLink = function() {
+          let keys = [];
+          for (var key in thisBoard.constructor.DEFAULT_PARAMS) {
+            keys.push(key);
+          }
+          // Default params setting applying
+          applyDefaultParameters(this, thisBoard.constructor.DEFAULT_PARAMS);
+          // Convert params to integer
+          convertParametersToInt(this, keys);
+
+          // Create canvas and make it as backgroud image for nodes rendering
+          // The lay out is as below:
+          //   <wrap div 'position: relative;'>
+          //     <bgDiv 'position: absolute;'>
+          //        <canvas>
+          //         <!--
+          //            will be rendered programmatically by javascript as
+          //            below code
+          //         -->
+          //        </canvas>
+          //     </bgDiv>
+          //     <template div 'position: absolute;'>
+          //         <!-- 
+          //            house nodes, will be html rendered by nodes
+          //         -->
+          //     </template div>
+          //   </wrap div>
+          let bgDiv = document.createElement("div");
+          bgDiv.style["position"]     = "absolute";
+          bgDiv.style["left"]         = "0px";
+          bgDiv.style["top"]          = "0px";
+          bgDiv.style["width"]        = this.width + "px";
+          bgDiv.style["height"]       = this.height + "px";
+          bgDiv.style["border-width"] = "0px";
+          bgDiv.style["border-style"] = "none";
+          bgDiv.style["margin"]       = "0px 0px 0px 0px";
+          $element.prepend(bgDiv);
+          $element.wrap([
+            "<div ",
+              "style='",
+                "position: relative; ",
+                "width: ",
+                  this.width + "px;",
+                "height: ",
+                  this.height + "px;",
+              "'>",
+            "</div>"
+          ].join(""));
+          let canvas = document.createElement("canvas");
+          canvas.width = this.width;
+          canvas.height = this.height;
+          bgDiv.appendChild(canvas)
+
+          // draw 
+          let ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#eeeeee";
+          //ctx.fillRect(0, 0, this.width, this.height);
+        }
+        $transclude(function(clone, scope) {
+          $element.append(clone);
+        });
+      }
+      return controllerConfigFunc;
+    }
+  }
+
+
+
+
+
+  let app = angular.module('blogEntryApp', []);
+  app.controller("blogEntryCtrl", function($scope) {
+  });
+
+
+
+  let node = new Node();
+  let board = new Board();
+
+  node.join(app);
+  board.join(app);
+
+</script>
