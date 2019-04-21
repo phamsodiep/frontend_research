@@ -7,10 +7,10 @@
 
   <hr />
   <diep-draw-board width="600" height="600">
-      <diep-draw-node width="300" height="300" left="300" top="300">
+      <diep-draw-node width="300" height="300" left="300" top="300" data="graphCmds.RB">
         <div>Right bottom</div>
       </diep-draw-node>
-      <diep-draw-node width="300" height="300" left="0" top="0">
+      <diep-draw-node width="300" height="300" left="0" top="0" data="graphCmds.LT">
         <div>Left top</div>
       </diep-draw-node>
   </diep-draw-board>
@@ -237,6 +237,34 @@
     getControllerConfigFunc() {
       let thisNode = this;
       let controllerConfigFunc = function ($scope, $element) {
+        this.COORDINATE_CONVERT_NEED_FUNCS = [
+          "fillRect"
+        ];
+        this.convertToGlobalCoordinate = function (operation, params) {
+          let funcList = this.COORDINATE_CONVERT_NEED_FUNCS;
+          if (funcList.includes(operation)) {
+            params[0] += this.left;
+            params[1] += this.top;
+          }
+        }
+        this.render = function(graphContext) {
+          const PROTO = CanvasRenderingContext2D.prototype;
+            let renderRequests = this.data;
+            let nRenderRequest = renderRequests.length;
+            for (let i = 0; i < nRenderRequest; i++) {
+              let renderRequest = renderRequests[i];
+              let op = renderRequest[0];
+              let params = renderRequest[1];
+              if (Array.isArray(params)) {
+                this.convertToGlobalCoordinate(op, params);
+                PROTO[op].apply(graphContext, params);
+              }
+              else {
+                graphContext[op] = params;
+              }
+            }
+        };
+
         this.$onInit = function() {
           this.boardCtrl.insert(this);
         };
@@ -263,30 +291,14 @@
             "margin":       "0px 0px 0px 0px"
           };
         };
-        this.render = thisNode.getRenderFunc();
       }
       return controllerConfigFunc;
     }
 
     getBindingConfig() {
       let result = super.getBindingConfig();
-      result["name"] = '@';
+      result["data"] = '<';
       return result;
-    }
-
-    getRenderFunc() {
-      return function() {
-        return [
-          [
-            "fillStyle",
-            "#eeeeee"
-          ],
-          [
-            "fillRect",
-            [this.left, this.top, this.width, this.height]
-          ]
-        ]
-      }
     }
   };
 
@@ -385,20 +397,7 @@
           let nNode = nodes.length;
           const PROTO = CanvasRenderingContext2D.prototype;
           for (let i = 0; i < nNode; i++) {
-            let node = nodes[i];
-            let renderRequests = node.render();
-            let nRenderRequest = renderRequests.length;
-            for (let j = 0; j < nRenderRequest; j++) {
-              let renderRequest = renderRequests[j];
-              let op = renderRequest[0];
-              let params = renderRequest[1];
-              if (Array.isArray(params)) {
-                PROTO[op].apply(ctx, params);
-              }
-              else {
-                ctx[op] = params;
-              }
-            }
+            nodes[i].render(ctx);
           }
         }
         $transclude(function(clone, scope) {
@@ -415,6 +414,38 @@
 
   let app = angular.module('blogEntryApp', []);
   app.controller("blogEntryCtrl", function($scope) {
+    $scope.graphCmds = {
+      "RB" : [
+        [
+          "fillStyle",
+          "#eeeeee"
+        ],
+        [
+          "fillRect",
+          [0, 0, 36, 92]
+        ],
+        [
+          "fillRect",
+          [10, 10, 26, 26]
+        ]
+      ],
+
+      "LT" :[
+        [
+          "fillStyle",
+          "#ee0000"
+        ],
+        [
+          "fillRect",
+          [5, 5, 30, 20]
+        ],
+        [
+          "fillRect",
+          [20, 20, 36, 36]
+        ]
+      ],
+
+    };
   });
 
 
