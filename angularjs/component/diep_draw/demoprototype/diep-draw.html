@@ -8,10 +8,10 @@
   <hr />
   <diep-draw-board width="600" height="600">
       <diep-draw-node width="300" height="300" left="300" top="300">
-        <div>Left top</div>
+        <div>Right bottom</div>
       </diep-draw-node>
       <diep-draw-node width="300" height="300" left="0" top="0">
-        <div>Right bottom</div>
+        <div>Left top</div>
       </diep-draw-node>
   </diep-draw-board>
 </div>
@@ -34,6 +34,12 @@
     let n = keys.length;
     for (let i = 0; i < n; i++) {
       self[keys[i]] = parseInt(self[keys[i]]);
+    }
+  }
+
+  function convertParametersToBindingSetting(params, bindingSetting = '@') {
+    for (let key in params) {
+      params[key] = bindingSetting;
     }
   }
 
@@ -62,6 +68,7 @@
   //////////////////////////////////////////////////////////////////////////////
   // Data mode
   //////////////////////////////////////////////////////////////////////////////
+  // This class may be deprecated
   class GraphicRenderRequest {
     constructor(...args) {
       this.$$GraphicRenderRequestPrivateAttrs = Symbol();
@@ -95,14 +102,14 @@
     // State of component, its domain values are:
     //   0: initialized state
     //   1: joined state (it is registered with an Angular application)
-
     static get TAG_PREFIX() {
       return "diepDraw";
     }
 
     static get TAG_FULL_NAME() {
       throw new TypeError(
-        "Can not invoke abstract property TAG_NAME of abstract class DiepDraw"
+        "Can not invoke abstract property TAG_FULL_NAME of abstract class "
+        + this.name
       );
     }
 
@@ -126,7 +133,8 @@
 
       if (new.target === DiepDraw) {
         throw new TypeError(
-          "Can not initialize an instance of abstract class GUIObject"
+          "Can not initialize an instance of abstract class "
+          + this.constructor.name
         );
       }
       $$this.isTranscluded = getBoolean(isTranscluded);
@@ -135,7 +143,7 @@
 
     join(app) {
       let $$this = this[this.$$DiepDrawPrivateAttrs];
-      if ($$this.state) {
+      if ($$this.state != 0) {
         return false;
       }
       app.component(this.constructor.TAG_FULL_NAME, this.getComponentConfig());
@@ -185,12 +193,9 @@
 
     // To be overriden
     getBindingConfig() {
+      // Retreive default parameters and convert them into '@' binding configure
       let result = this.getDefaultParametersBindingConfig();
-      for (let key in result) {
-        result[key] = '@';
-      }
-      let newConfig = {};
-      result = Object.assign(newConfig, result);
+      convertParametersToBindingSetting(result);
       return result;
     }
   }
@@ -202,10 +207,10 @@
     }
 
     static get DEFAULT_PARAMS() {
-      let result = DiepDraw.DEFAULT_PARAMS;
-      result["left"] = "0";
-      result["top"] = "0";
-      return result;
+      return {
+        "left":  "0",
+        "top":   "0",
+      };
     };
 
     constructor(isTranscluded = true) { 
@@ -220,7 +225,7 @@
       this[this.$$NodePrivateAttrs] = {};
       let $$this = this[this.$$NodePrivateAttrs];
       $$this.left =
-        (typeof left === "number") ? left : 0;       
+        (typeof left === "number") ? left : 0;
       $$this.top =
        (typeof top === "number") ? top : 0;
     }
@@ -237,11 +242,12 @@
         };
         this.$postLink = function() {
           let keys = [];
-          for (var key in thisNode.constructor.DEFAULT_PARAMS) {
+          let defaultParams = thisNode.getDefaultParametersBindingConfig();
+          for (var key in defaultParams) {
             keys.push(key);
           }
           // Default params setting applying
-          applyDefaultParameters(this, thisNode.constructor.DEFAULT_PARAMS);
+          applyDefaultParameters(this, defaultParams);
           // Convert params to integer
           convertParametersToInt(this, keys);
 
@@ -257,19 +263,30 @@
             "margin":       "0px 0px 0px 0px"
           };
         };
+        this.render = thisNode.getRenderFunc();
       }
       return controllerConfigFunc;
     }
 
-    // This is a fake data
-    render() {
-      let result = [];
-      result.push(new GraphicRenderRequest(
-        "fillStyle", "#FF0000"
-      ));
-      result.push(new GraphicRenderRequest(
-        "fillRect", 1, 1, 30, 60
-      ));
+    getBindingConfig() {
+      let result = super.getBindingConfig();
+      result["name"] = '@';
+      return result;
+    }
+
+    getRenderFunc() {
+      return function() {
+        return [
+          [
+            "fillStyle",
+            "#eeeeee"
+          ],
+          [
+            "fillRect",
+            [this.left, this.top, this.width, this.height]
+          ]
+        ]
+      }
     }
   };
 
@@ -280,8 +297,7 @@
     }
 
     static get DEFAULT_PARAMS() {
-      let result = DiepDraw.DEFAULT_PARAMS;
-      return result;
+      return {};
     };
 
     constructor(isScrollable = false, isSpanable = false) {
@@ -304,7 +320,6 @@
     getControllerConfigFunc() {
       let thisBoard = this;
       let controllerConfigFunc = function ($scope, $element, $transclude) {
-        this.sime = "^H^";
         this.nodes = [];
         this.insert = function (node) {
           this.nodes.push(node);
@@ -312,11 +327,12 @@
 
         this.$postLink = function() {
           let keys = [];
-          for (var key in thisBoard.constructor.DEFAULT_PARAMS) {
+          let defaultParams = thisBoard.getDefaultParametersBindingConfig();
+          for (var key in defaultParams) {
             keys.push(key);
           }
           // Default params setting applying
-          applyDefaultParameters(this, thisBoard.constructor.DEFAULT_PARAMS);
+          applyDefaultParameters(this, defaultParams);
           // Convert params to integer
           convertParametersToInt(this, keys);
 
@@ -363,10 +379,27 @@
           canvas.height = this.height;
           bgDiv.appendChild(canvas)
 
-          // draw 
+          // Process graphic draw node requests
           let ctx = canvas.getContext("2d");
-          ctx.fillStyle = "#eeeeee";
-          //ctx.fillRect(0, 0, this.width, this.height);
+          let nodes = this.nodes;
+          let nNode = nodes.length;
+          const PROTO = CanvasRenderingContext2D.prototype;
+          for (let i = 0; i < nNode; i++) {
+            let node = nodes[i];
+            let renderRequests = node.render();
+            let nRenderRequest = renderRequests.length;
+            for (let j = 0; j < nRenderRequest; j++) {
+              let renderRequest = renderRequests[j];
+              let op = renderRequest[0];
+              let params = renderRequest[1];
+              if (Array.isArray(params)) {
+                PROTO[op].apply(ctx, params);
+              }
+              else {
+                ctx[op] = params;
+              }
+            }
+          }
         }
         $transclude(function(clone, scope) {
           $element.append(clone);
