@@ -147,7 +147,7 @@ var json1 = {
             ng-repeat='col in cols'
             ng-style='{{col.style}}'
           >
-              {{col.value}}
+              {{col.data.value}}
           </div>
       </div>
   </div>
@@ -192,11 +192,13 @@ var json1 = {
     let controllerConfigFunc = function ($scope, $element) {
       this.$onInit = function() {
         // Compute datasource Angular model from input json data
-        const NULLNODE = {
+        let NULLNODE = {
             value: " ",
             childs: []
         };
-        let travelComputeTreeDimension = function (nodesInfo, data, lv) {
+        this.NULLNODE = NULLNODE;
+
+        let travelCreateTree = function (nodesInfo, data, lv) {
           let n = data.childs.length;
           if (n == 0) {
             nodesInfo[0]["leafCount"]++;
@@ -206,20 +208,21 @@ var json1 = {
           }
           else {
             for(let i = 0; i < n; i++) {
-              travelComputeTreeDimension(nodesInfo, data.childs[i], lv + 1);
+              let child = data.childs[i];
+              child.parent = data;
+              travelCreateTree(nodesInfo, child, lv + 1);
             }
           }
         };
-        let travelCreateNodes = function (nodes, data, lv) {
+        let travelCreateRenderNodes = function (nodes, data, lv) {
           // result is return value, it is width of branch
           let result = 0;
           // Process this node
           let n = data.childs.length;
           let thisnode = {
-            value: data.value,
-            childCount: n,
-            width: 0,
-            style: null
+            "data": data,
+            "width": 0,
+            "style": null
           };
           // request a horizon div at line $lv by push $thisnode to $nodes[$lv]
           // nodes[0]: metadata
@@ -244,14 +247,14 @@ var json1 = {
             //   for this node in the verical line
             result = 1;
             if (lv < nodes[0]["depth"]) {
-              travelCreateNodes(nodes, NULLNODE, lv + 1);
+              travelCreateRenderNodes(nodes, NULLNODE, lv + 1);
             }
             // Result not change, it is still 1, since we are going to go down
             // on vertical line (no width span activities)
           }
           else {
             for(let i = 0; i < n; ++i) {
-              result += travelCreateNodes(nodes, data.childs[i], lv + 1);
+              result += travelCreateRenderNodes(nodes, data.childs[i], lv + 1);
             }
           }
           // Post-Process child node (continue process this node after
@@ -259,15 +262,18 @@ var json1 = {
           thisnode.width = result;
           return result;
         };
-        let data = this.datasource;
+        // Clone datasource since we will alter its data
+        let data = Object.assign({}, this.datasource);
+        // Create parent node for root node
+        data.parent = null;
         let nodes = [{
           "depth": 0,
           "leafCount": 0
         }];
         // @TODO: validate input data
         // Current version assuming that tree has a not null root (valid data)
-        travelComputeTreeDimension(nodes, data, 0);
-        travelCreateNodes(nodes, data, 1);
+        travelCreateTree(nodes, data, 0);
+        travelCreateRenderNodes(nodes, data, 1);
         this.tree = nodes[0];
         // Remove metadata before passing datasource to Angular component
         nodes.shift();
@@ -324,7 +330,7 @@ var json1 = {
           let m = nodes[i].length;
           for (let j = 0; j < m; j++) {
             let node = nodes[i][j];
-            let isnull = (node.value == " ");
+            let isnull = (node.data === this.NULLNODE);
             let bwidth = isnull ? 0 : BORDER;
             let bstyle = bwidth == 0 ? "none" : BORDER_STYLE;
             let padding =
@@ -411,7 +417,7 @@ var json1 = {
             let node = nodes[i][j];
             // This node acts as parent
             // just for the case that it has children
-            if (node.childCount > 0) {
+            if (node.data.childs.length > 0) {
               // draw v-line down
               ctx.fillRect(
                 x + (node.width * HALF_CELLW_OCCUPATION),
@@ -451,7 +457,7 @@ var json1 = {
             // This node acts as child (since i == 0 => it is root node)
             if (i > 0) {
               // draw a h-line up to parent touching to h-line
-              if (node.value != " ") {
+              if (node.data.value != " ") {
                 ctx.fillRect(
                   x + (node.width * HALF_CELLW_OCCUPATION),
                   y,
@@ -466,7 +472,7 @@ var json1 = {
       }
     };
 
-    let templateStr = "<div style=\"position: absolute; z-index: 1; left: 0px; top: 0px; border-width: 0px; border-style: none; margin: 0px 0px 0px 0px;\"> <div ng-repeat=\"cols in $ctrl.nodes\" ng-style=\"{'display' : 'flex'}\"> <div ng-repeat=\"col in cols\" ng-style=\"{{col.style}}\"> {{col.value}} </div> </div> </div>";
+    let templateStr = "<div style=\"position: absolute; z-index: 1; left: 0px; top: 0px; border-width: 0px; border-style: none; margin: 0px 0px 0px 0px;\"> <div ng-repeat=\"cols in $ctrl.nodes\" ng-style=\"{'display' : 'flex'}\"> <div ng-repeat=\"col in cols\" ng-style=\"{{col.style}}\"> {{col.data.value}} </div> </div> </div>";
     let bindingCfg = {
       width:        "@",
       height:       "@",
