@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>
+            Class Hierarchy Inspector Report
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js"></script>
+        <script src="jslib/diep-org-chart.js"></script>
+    </head>
+
+    <body>
+        <h1>
+            Class Hierarchy Inspector Report
+        </h1>
+
+        <script>
+          let i = 0;
+          let tree = [];
+
+          tree[i++] = {"clazz":"org.eclipse.jdt.core.dom.Annotation","children":[{"clazz":"org.eclipse.jdt.core.dom.MarkerAnnotation","children":[]},{"clazz":"org.eclipse.jdt.core.dom.NormalAnnotation","children":[]},{"clazz":"org.eclipse.jdt.core.dom.SingleMemberAnnotation","children":[]}]}
+
+          tree[i++] = {"clazz":"org.eclipse.jdt.core.dom.AbstractTypeDeclaration","children":[{"clazz":"org.eclipse.jdt.core.dom.AnnotationTypeDeclaration","children":[]},{"clazz":"org.eclipse.jdt.core.dom.EnumDeclaration","children":[]},{"clazz":"org.eclipse.jdt.core.dom.TypeDeclaration","children":[]}]}
+
+          tree[i++] = {"clazz":"org.eclipse.jdt.core.dom.VariableDeclaration","children":[{"clazz":"org.eclipse.jdt.core.dom.SingleVariableDeclaration","children":[]},{"clazz":"org.eclipse.jdt.core.dom.VariableDeclarationFragment","children":[]}]}
+
+          tree[i++] = {"clazz":"org.eclipse.jdt.core.dom.PackageDeclaration","children":[]}
+
+          tree[i++] = {"clazz":"org.eclipse.jdt.core.dom.MethodDeclaration","children":[]}
+          tree[i++] = {"clazz":"org.eclipse.jdt.core.dom.MemberValuePair","children":[]}
+        </script>
+
+        <div ng-app="myApp" ng-controller="myCtrl">
+            <organizational-chart width="180" datasource="datasource[0]">
+            </organizational-chart>
+            <br />
+            <hr />
+            <organizational-chart width="180" datasource="datasource[1]">
+            </organizational-chart>
+            <br />
+            <hr />
+            <organizational-chart width="180" datasource="datasource[2]">
+            </organizational-chart>
+            <br />
+            <hr />
+            <organizational-chart width="180" datasource="datasource[3]">
+            </organizational-chart>
+            <br />
+            <hr />
+            <organizational-chart width="180" datasource="datasource[4]">
+            </organizational-chart>
+            <br />
+            <hr />
+            <organizational-chart width="180" datasource="datasource[5]">
+            </organizational-chart>
+        </div>
+        <script>
+          function convert(input) {
+            let values = input.clazz.split(".");
+            let children = input.children;
+            let result = {
+              "value": values[values.length - 1],
+              "childs": []
+            };
+            let n = children.length;
+            for (let i = 0; i < n; i++) {
+              let child = convert(children[i]);
+              result.childs.push(child);
+            }
+            return result;
+          }
+
+          var app = angular.module('myApp', []);
+          app.component('organizationalChart', buildOrganizationalChart())
+          app.controller("myCtrl", function($scope) {
+            let datasource = [];
+            let n = tree.length;
+            for(let i = 0; i < n; i++) {
+              datasource.push(convert(tree[i]));
+            }
+            $scope.datasource = datasource;
+          });
+        </script>
+    </body>
+</html>
