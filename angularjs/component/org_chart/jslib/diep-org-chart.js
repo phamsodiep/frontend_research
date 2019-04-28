@@ -82,7 +82,7 @@ function buildOrganizationalChart() {
       }];
       // @TODO: validate input data
       // Current version assuming that tree has a not null root (valid data)
-      travelCreateTree(nodes, data, 0);
+      travelCreateTree(nodes, data, 1);
       travelCreateRenderNodes(nodes, data, 1);
       this.tree = nodes[0];
       // Remove metadata before passing datasource to Angular component
