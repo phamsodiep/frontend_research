@@ -24,7 +24,7 @@ function buildOrganizationalChart() {
           }
         }
       };
-      let travelCreateRenderNodes = function (nodes, data, lv) {
+      let travelCreateRenderNodes = function (nodes, data, lv, minGroupLeaf = 1) {
         // result is return value, it is width of branch
         let result = 0;
         // Process this node
@@ -57,14 +57,58 @@ function buildOrganizationalChart() {
           //   for this node in the verical line
           result = 1;
           if (lv < nodes[0]["depth"]) {
-            travelCreateRenderNodes(nodes, NULLNODE, lv + 1);
+            travelCreateRenderNodes(nodes, NULLNODE, lv + 1, minGroupLeaf);
           }
           // Result not change, it is still 1, since we are going to go down
           // on vertical line (no width span activities)
         }
         else {
-          for(let i = 0; i < n; ++i) {
-            result += travelCreateRenderNodes(nodes, data.childs[i], lv + 1);
+          let leaves = [];
+          if (minGroupLeaf >= 2) {
+            let m = 0;
+            // Detect group leaf node
+            for(let i = 0; i < n; i++) {
+              if (data.childs[i].childs.length == 0) {
+                m++;
+              }
+            }
+            if (m >= minGroupLeaf) {
+              let i = 0;
+              while(i < n) {
+                if (data.childs[i].childs.length == 0) {
+                  leaves.push(data.childs[i]);
+                  data.childs.splice(i, 1);
+                  n = data.childs.length;
+                }
+                else {
+                  i++;
+                }
+              }
+            }
+          }
+          let o = leaves.length;
+
+
+          if (o > 0) {
+            nodes[0]["leafCount"] -= (o - 1);
+            let leafNodeData = {
+              parent: leaves[0].parent,
+              value:  "[...]",
+              values: leaves[0].value,
+              childs: []
+            };
+            for(let i = 1; i < o; i++) {
+              leafNodeData.values += "\n" + leaves[i].value;
+            }
+
+            data.childs.push(leafNodeData);
+            n = data.childs.length;
+
+
+
+          }
+          for(let i = 0; i < n; i++) {
+            result += travelCreateRenderNodes(nodes, data.childs[i], lv + 1, minGroupLeaf);
           }
         }
         // Post-Process child node (continue process this node after
@@ -83,7 +127,7 @@ function buildOrganizationalChart() {
       // @TODO: validate input data
       // Current version assuming that tree has a not null root (valid data)
       travelCreateTree(nodes, data, 1);
-      travelCreateRenderNodes(nodes, data, 1);
+      travelCreateRenderNodes(nodes, data, 1, 4);
       this.tree = nodes[0];
       // Remove metadata before passing datasource to Angular component
       nodes.shift();
