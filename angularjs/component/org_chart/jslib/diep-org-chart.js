@@ -66,7 +66,7 @@ function buildOrganizationalChart() {
           let leaves = [];
           if (minGroupLeaf >= 2) {
             let m = 0;
-            // Detect group leaf node
+            // Test if we should group leaf nodes into a group
             for(let i = 0; i < n; i++) {
               if (data.childs[i].childs.length == 0) {
                 m++;
@@ -86,9 +86,8 @@ function buildOrganizationalChart() {
               }
             }
           }
+
           let o = leaves.length;
-
-
           if (o > 0) {
             nodes[0]["leafCount"] -= (o - 1);
             let leafNodeData = {
@@ -100,15 +99,13 @@ function buildOrganizationalChart() {
             for(let i = 1; i < o; i++) {
               leafNodeData.values += "\n" + leaves[i].value;
             }
-
             data.childs.push(leafNodeData);
             n = data.childs.length;
-
-
-
           }
           for(let i = 0; i < n; i++) {
-            result += travelCreateRenderNodes(nodes, data.childs[i], lv + 1, minGroupLeaf);
+            result += travelCreateRenderNodes(
+              nodes, data.childs[i], lv + 1, minGroupLeaf
+            );
           }
         }
         // Post-Process child node (continue process this node after
@@ -178,6 +175,15 @@ function buildOrganizationalChart() {
       const HALF_CELLH_OCCUPATION = HALF_HEIGHT + HALF_VSPACE;
       const CELLH_OCCUPATION      = HALF_CELLH_OCCUPATION * 2;
 
+      this.tooltipStyle = {
+        "width":            NORMAL_WIDTH + "px",
+        "background-color": "#ddd",
+        "color":            "black",
+        "text-align":       "center",
+        "border-radius":    "6px",
+        "padding":          "0px 0px 0px 0px",
+        "z-index":          "1"
+      };
       let nodes = this.nodes;
       let n = nodes.length;
       for(let i = 0; i < n; i++) {
@@ -205,9 +211,11 @@ function buildOrganizationalChart() {
             "margin-right":  padding,
             "text-align":    "center"
           }
+          // compute tool tip state
+          node.hideTooltip = true;
+          node.isGroupNode  = (typeof node.data.values === "string");
         }
       }
-
       let tree = this.tree;
       let treewidth  = tree.leafCount *  CELLW_OCCUPATION;
       let treeheight = tree.depth * CELLH_OCCUPATION;
@@ -286,7 +294,7 @@ function buildOrganizationalChart() {
           // This node acts as child (since i == 0 => it is root node)
           if (i > 0) {
             // draw a h-line up to parent touching to h-line
-            if (node.data.value != " ") {
+            if (!(node.data === this.NULLNODE)) {
               ctx.fillRect(
                 x + (node.width * HALF_CELLW_OCCUPATION),
                 y,
@@ -335,8 +343,34 @@ function buildOrganizationalChart() {
     }
   };
 
+  let containerStyle = [
+    "style=\"position: absolute;",
+    "z-index: 1;",
+    "left: 0px;",
+    "top: 0px;",
+    "border-width: 0px;",
+    "border-style: none;",
+    "margin: 0px 0px 0px 0px;\""
+  ].join("");
+  let toolTipCmds = [
+    "ng-mouseleave=\"col.hideTooltip = true\" ",
+    "ng-mouseover=\"col.hideTooltip = !col.isGroupNode\""
+  ].join("");
+  let templateStr = [
+    "<div " + containerStyle + ">",
+        "<div ng-repeat=\"cols in $ctrl.nodes\" ng-style=\"{'display' : 'flex'}\">",
+            "<div " + toolTipCmds + " ng-repeat=\"col in cols\" ng-style=\"{{col.style}}\">",
+                "{{col.data.value}}",
+                "<div ng-hide=\"col.hideTooltip\">",
+                    "<div ng-style=\"{{$ctrl.tooltipStyle}}\">",
+                        "{{col.data.values}}",
+                    "</div>",
+                "</div>",
+            "</div>",
+        "</div>",
+    "</div>"
+  ].join("");
 
-  let templateStr = "<div style=\"position: absolute; z-index: 1; left: 0px; top: 0px; border-width: 0px; border-style: none; margin: 0px 0px 0px 0px;\"> <div ng-repeat=\"cols in $ctrl.nodes\" ng-style=\"{'display' : 'flex'}\"> <div ng-repeat=\"col in cols\" ng-style=\"{{col.style}}\"> {{col.data.value}} </div> </div> </div>";
   let bindingCfg = {
     width:        "@",
     height:       "@",
