@@ -93,12 +93,17 @@ function buildOrganizationalChart() {
             let leafNodeData = {
               parent: leaves[0].parent,
               value:  "[...]",
-              values: leaves[0].value,
+              values: [],
               childs: []
             };
-            for(let i = 1; i < o; i++) {
-              leafNodeData.values += "\n" + leaves[i].value;
+
+            for(let i = 0; i < o; i++) {
+              let value = leaves[i].value;
+              if (!leafNodeData.values.includes(value)) {
+                leafNodeData.values.push(value);
+              }
             }
+
             data.childs.push(leafNodeData);
             n = data.childs.length;
           }
@@ -213,7 +218,7 @@ function buildOrganizationalChart() {
           }
           // compute tool tip state
           node.hideTooltip = true;
-          node.isGroupNode  = (typeof node.data.values === "string");
+          node.isGroupNode  = Array.isArray(node.data.values);
         }
       }
       let tree = this.tree;
@@ -363,7 +368,9 @@ function buildOrganizationalChart() {
                 "{{col.data.value}}",
                 "<div ng-hide=\"col.hideTooltip\">",
                     "<div ng-style=\"{{$ctrl.tooltipStyle}}\">",
-                        "{{col.data.values}}",
+                        "<div ng-repeat=\"val in col.data.values\" >",
+                            "{{val}}",
+                        "</div>",
                     "</div>",
                 "</div>",
             "</div>",
