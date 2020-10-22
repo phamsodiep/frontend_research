@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<!--GENERATED FILE, PLEASE DO NOT EDIT!!!--><EXT object="uml" version="4">
+  <OBJECT>
+    <ID name="uml" mc="Standard.Package" uid="4c6cbb20-1f5f-4655-a3e1-575ff7ece3b9"/>
+    <PID name="uml" mc="Standard.Project" uid="6952cae4-8de5-4991-a090-3af9400314d2"/>
+    <ATTRIBUTES>
+      <ATT name="IsInstantiable">false</ATT>
+      <ATT name="IsAbstract">false</ATT>
+      <ATT name="IsLeaf">false</ATT>
+      <ATT name="IsRoot">false</ATT>
+      <ATT name="Visibility">Public</ATT>
+      <ATT name="Name"><![CDATA[uml]]></ATT>
+      <ATT name="status">1970354901745664</ATT>
+    </ATTRIBUTES>
+    <DEPENDENCIES>
+      <COMP relation="OwnedElement">
+        <COMPID name="Article" mc="Standard.Class" uid="8163d491-61ca-4eac-bfc3-f95d9f7f7fd7"/>
+        <COMPID name="Aside" mc="Standard.Class" uid="9673b60f-7a43-4dce-90e1-2d60751af503"/>
+        <COMPID name="Details" mc="Standard.Class" uid="1e5ddcb9-9452-4e17-8141-b85f74a3fe07"/>
+        <COMPID name="Figcaption" mc="Standard.Class" uid="97e18188-c039-423e-9213-1ae00859b8e9"/>
+        <COMPID name="Figure" mc="Standard.Class" uid="742750f0-d0da-456c-8622-45cdb3855583"/>
+        <COMPID name="Footer" mc="Standard.Class" uid="37a7a6a0-1830-48d6-a79c-5ced9c87f8d0"/>
+        <COMPID name="Header" mc="Standard.Class" uid="4d53850d-1862-4c34-be3b-d0a076edf5eb"/>
+        <COMPID name="Main" mc="Standard.Class" uid="83d4eda5-e4a4-4e93-9b1b-90e0f4bcdb3b"/>
+        <COMPID name="Mark" mc="Standard.Class" uid="84b8d205-6b8f-4b66-b2aa-b7f8cfa59c64"/>
+        <COMPID name="Nav" mc="Standard.Class" uid="08f46129-3d03-4529-9368-ed1bfa80b151"/>
+        <COMPID name="Section" mc="Standard.Class" uid="f7503273-6406-438b-bb70-f0dd76171f36"/>
+        <COMPID name="Nav" mc="Standard.Class" uid="dc36f0b6-bf6e-4bb9-9f0c-9271c1c54ef2"/>
+        <COMPID name="Section" mc="Standard.Class" uid="a419d977-0641-46d5-8398-3c8e69622fd2"/>
+        <COMPID name="Summary" mc="Standard.Class" uid="d78d69f8-517e-4082-a019-2579cee0d60d"/>
+        <COMPID name="Time" mc="Standard.Class" uid="90f8850b-5660-48e3-bf44-03acdbd17044"/>
+        <COMPID name="content" mc="Standard.Interface" uid="65efdff3-ffea-48b5-a387-3d5827c1bdf3"/>
+        <COMPID name="Boundary Section" mc="Standard.Class" uid="effeaa03-d76e-4da2-b775-75157ad67b06"/>
+        <COMPID name="Img" mc="Standard.Class" uid="eef17ba5-1314-4398-9729-e2fc43dfb340"/>
+      </COMP>
+      <COMP relation="Product">
+        <COMPID name="Semantic Elements Class Diagram" mc="Standard.ClassDiagram" uid="80820a60-535e-4b0c-b432-34a913c2173b"/>
+      </COMP>
+    </DEPENDENCIES>
+  </OBJECT>
+</EXT>
